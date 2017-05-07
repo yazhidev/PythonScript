@@ -71,7 +71,8 @@ class ReadData:
         self.writeSum()
         # 绘制每小时百度线索
         self.writeEveryHourBaiduData()
-
+        # # 消费表
+        # self.readComsumeData()
         print(self.warning)
 
     # 将百度的数据添加到小时列表里
@@ -269,6 +270,37 @@ class ReadData:
 
         self.excel.save(u'数据.xls')
 
+    # 读取消费账号
+    def readComsumeData(self):
+        data = self.findExcel("zhanghu")
+        table = data.sheets()[0]  # 第一张表
+        fileRows = table.nrows  # 行数
+
+
+        for i in range(8, fileRows):  # 从第二行开始
+            thisLine = table.row_values(i)  # 获取一整行数据
+            data = xlrd.xldate_as_tuple(thisLine[4], 1)
+            dayOfWeek = 0
+            ## 先判断是周几
+            if dayOfWeek not in self.weekMap:
+                # 还未存在则初始化
+                thisDayData = []
+                for i in range(24):  # 该天分时线索列表初始化
+                    thisDayData.append(DayInWeekData())
+                self.weekMap[dayOfWeek] = thisDayData
+
+            newHourInt = int(str(thisLine[1]).replace(".0", "")) # 小时
+            thisDayData = self.weekMap[dayOfWeek][newHourInt] # 当天数据，例如周一的数据
+            thisDayData.show += int(str(thisLine[3]).replace(".0", "")) # 展现
+            thisDayData.click += int(str(thisLine[4]).replace(".0", "")) # 点击
+            thisDayData.comsumer += thisLine[5] # 消费
+
+        print(self.weekMap[0][1].comsumer)
+
+
+
+
+
     # 写入百度分时线索量
     def writeEveryHourBaiduData(self):
         sheet2 = self.excel.add_sheet(u"百度分时段线索")
@@ -294,12 +326,15 @@ class ReadData:
 # 每周七天分时数据模型
 class DayInWeekData:
     def __init__(self):
+        self.show = 0 # 展现
+        self.click = 0 # 点击
         self.comsumer = 0  # 消费
-        self.number = 0  # 线索
+        self.number = 0  # 线索量
         self.price = 0  # 线索成本
+        self.clickPercent = 0 #点击率=点击/展现
 
 
 # 运行
 ReadData().start()
 
-# pip install pyexcel-xls 安装模块
+# ppip install pyexcel-xls 安装模块

@@ -89,6 +89,7 @@ class CSDN_Blog_Spider:
             "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:10.0) Gecko/20100101 Firefox/10.0 ",
         ]
         agent = random.choice(user_agents)
+        print(self.url)
         req = urllib.request.Request(self.url)
         req.add_header('User-Agent', agent)
         req.add_header('Host', 'blog.csdn.net')
@@ -361,7 +362,7 @@ class Scheduler:
 
 
 # leancloud初始化，请填入自己的id和key
-leancloud.init('', '')
+leancloud.init("5Td9WqN98VXYHv2FjIns8xIB-gzGzoHsz", "eJtkORIeqgETuYznvyBddRHH")
 
 url = ""
 Scheduler(url).start()

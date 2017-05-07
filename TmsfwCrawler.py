@@ -200,6 +200,6 @@ class GetInfo:
 
 
 # leancloud初始化，请填入自己的id和key
-leancloud.init('', '')
+leancloud.init("QM3TJCIGPNXwwKXitoDA7QIF-gzGzoHsz", "CvihDN4mD1jBV74b3SJ7feNC")
 nowTime = time.strftime('%Y%m%d', time.localtime(time.time()))
 GetInfo(int(nowTime) - 1).star()
