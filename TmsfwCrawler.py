@@ -1,12 +1,12 @@
 # coding=utf-8
-import sys
+import importlib,sys
 
 default_encoding = 'utf-8'
 if sys.getdefaultencoding() != default_encoding:
-    reload(sys)
+    importlib.reload(sys)
     sys.setdefaultencoding(default_encoding)
 
-import urllib2
+import urllib.request
 import random
 import time
 import datetime
@@ -29,13 +29,13 @@ class GetPage:
             "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:10.0) Gecko/20100101 Firefox/10.0 ",
         ]
         agent = random.choice(user_agents)
-        req = urllib2.Request(self.url)
+        req = urllib.request.Request(self.url)
         req.add_header('User-Agent', agent)
         req.add_header('Host', 'www.tmsf.com')
         req.add_header('Accept', '*/*')
         req.add_header('Referer', self.url)
         req.add_header('GET', url)
-        html = urllib2.urlopen(req)
+        html = urllib.request.urlopen(req)
         page = html.read().decode('utf-8')
         self.page = page
 
@@ -62,7 +62,7 @@ class GetXfInfo:
         index2 = content.find('套')
         getStr = content[index1 + 1:index2]
         self.xfAll = int(getStr)
-        print '全市新房签约：' + getStr
+        print('全市新房签约：' + getStr)
 
     # 其中住宅签约套数
     def getXfLiving(self, content):
@@ -71,7 +71,7 @@ class GetXfInfo:
         index2 = content.find('套')
         getStr = content[index1 + 1:index2]
         self.xfLiving = int(getStr)
-        print '签约新房中，住宅签约：' + getStr
+        print('签约新房中，住宅签约：' + getStr)
 
     # 其中住宅签约平均面积
     def getXfLivingAverage(self, content):
@@ -79,14 +79,14 @@ class GetXfInfo:
         index2 = content.find('平')
         getStr = content[index1 + 1:index2]
         self.average = int(getStr)/self.xfLiving
-        print '平均签约面积为：' + str(self.average)
+        print('平均签约面积为：' + str(self.average))
 
     # 全市可售套数
     def getCanSell(self, content):
         index1 = content.find('为')
         index2 = content.find('套')
         getStr = content[index1 + 1:index2]
-        print '杭州全市可售房源为：' + getStr
+        print('杭州全市可售房源为：' + getStr)
         self.canSell = int(getStr)
         return getStr
 
@@ -106,7 +106,7 @@ class GetEsfInfo:
         index1 = content.find('约')
         index2 = content.find('套')
         getStr = content[index1 + 1:index2]
-        print '二手房签约：' + getStr
+        print('二手房签约：' + getStr)
         self.esfAll = int(getStr)
 
     # 其中住宅签约套数
@@ -116,7 +116,7 @@ class GetEsfInfo:
         index2 = content.find('套')
         index3 = content.find('套', index2 + 1)
         getStr = content[index1 + 1:index3]
-        print '住宅签约：' + getStr
+        print('住宅签约：' + getStr)
         self.esfLiving = int(getStr)
 
     # 其中住宅签约平均面具
@@ -133,11 +133,11 @@ class GetInfo:
             if self.query() == False:
                 # 数据库存在该日期数据，结束循环
                 self.getLastDay()
-                print u'结束循环'
+                print(u'结束循环')
                 # continue
                 break
             else:
-                print u'时间：' + str(self.time)
+                print(u'时间：' + str(self.time))
                 xfUrl = "http://www.tmsf.com/upload/report/mrhqbb/" + str(self.time) + "/xf.html"
                 esfUrl = "http://www.tmsf.com/upload/report/mrhqbb/" + str(self.time) + "/esf.html"
 
@@ -150,11 +150,11 @@ class GetInfo:
 
                 self.getLastDay()
 
-                print u'休眠'
+                print(u'休眠')
                 time.sleep(3)
                 print('\n')
 
-        print u'结束'
+        print(u'结束')
 
     def getLastDay(self):
         # 转换成时间数组
@@ -164,7 +164,7 @@ class GetInfo:
         dateArray = datetime.datetime.utcfromtimestamp(myTime)
         # 重新转换成格式
         newYesTime = dateArray.strftime("%Y%m%d")
-        print '获得前一天时间：' + str(newYesTime)
+        print('获得前一天时间：' + str(newYesTime))
         self.time = int(newYesTime)
 
     # 查询是否已存在该日期数据
@@ -174,7 +174,7 @@ class GetInfo:
         # 判断日期是否存在
         query_list = query_object.equal_to('time', self.time).find()
         if len(query_list) == 0:
-            print u'数据库没有该日期数据，可上传'
+            print(u'数据库没有该日期数据，可上传')
             return True
         else:
             return False
@@ -192,13 +192,14 @@ class GetInfo:
         test_object.set('esf_living', esf.esfLiving)
         try:
             test_object.save()
-            print u'存储成功'
-        except LeanCloudError, e:
-            print e
+            print(u'存储成功')
+        finally:
+            print(u'')
 
 
 
-# 初始化leancloud
-leancloud.init("QM3TJCIGPNXwwKXitoDA7QIF-gzGzoHsz", "CvihDN4mD1jBV74b3SJ7feNC")
+
+# leancloud初始化，请填入自己的id和key
+leancloud.init('', '')
 nowTime = time.strftime('%Y%m%d', time.localtime(time.time()))
 GetInfo(int(nowTime) - 1).star()

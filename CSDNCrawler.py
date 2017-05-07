@@ -1,12 +1,12 @@
 # coding=utf-8
-import sys
+import importlib,sys
 
 default_encoding = 'utf-8'
 if sys.getdefaultencoding() != default_encoding:
-    reload(sys)
+    importlib.reload(sys)
     sys.setdefaultencoding(default_encoding)
 
-import urllib2
+import urllib.request
 import re
 import random
 import time
@@ -39,13 +39,13 @@ class Get_First_Url:
             "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:10.0) Gecko/20100101 Firefox/10.0 ",
         ]
         agent = random.choice(user_agents)
-        req = urllib2.Request(self.url)
+        req = urllib.request.Request(self.url)
         req.add_header('User-Agent', agent)
         req.add_header('Host', 'blog.csdn.net')
         req.add_header('Accept', '*/*')
         req.add_header('Referer', 'http://blog.csdn.net/mangoer_ys?viewmode=list')
         req.add_header('GET', url)
-        html = urllib2.urlopen(req)
+        html = urllib.request.urlopen(req)
         page = html.read().decode('utf-8')
         self.page = page
         self.beginurl = self.getFirstUrl()
@@ -63,8 +63,8 @@ class Get_First_Url:
 
         try:
             return 'http://blog.csdn.net' + html_content_list.a['href']
-        except Exception, e:
-            return "nourl"
+        finally:
+            return ""
 
 
 class CSDN_Blog_Spider:
@@ -74,7 +74,7 @@ class CSDN_Blog_Spider:
         if type == 4:
             global WAIT_URL
             WAIT_URL = url2
-            print '已记录待爬下一篇地址' + url2
+            print('已记录待爬下一篇地址' + url2)
             print('正在爬取网页地址： ' + self.url)
         else:
             print('正在爬取网页地址： ' + self.url)
@@ -89,13 +89,13 @@ class CSDN_Blog_Spider:
             "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:10.0) Gecko/20100101 Firefox/10.0 ",
         ]
         agent = random.choice(user_agents)
-        req = urllib2.Request(self.url)
+        req = urllib.request.Request(self.url)
         req.add_header('User-Agent', agent)
         req.add_header('Host', 'blog.csdn.net')
         req.add_header('Accept', '*/*')
         req.add_header('Referer', 'http://blog.csdn.net/mangoer_ys?viewmode=list')
         req.add_header('GET', url)
-        html = urllib2.urlopen(req)
+        html = urllib.request.urlopen(req)
         page = html.read().decode('utf-8')
         self.page = page
         self.articalid = self.getArticleId()
@@ -204,8 +204,8 @@ class CSDN_Blog_Spider:
 
         try:
             return blog_userface_list.img['src']
-        except Exception, e:
-            return " "
+        finally:
+            print("")
 
     def getContent(self):
         bs = BeautifulSoup(self.page)
@@ -240,13 +240,13 @@ class CSDN_Blog_Spider:
         # 先判断文章id是否存在
         query_list = query_object.equal_to('articleid', self.articalid).find()
         if len(query_list) == 0:
-            print '数据库没有，可上传'
+            print('数据库没有，可上传')
             return True
         elif query_list[0].get('authorid') == self.authorid:  # 再判断是否等于数据库中该文章的作者id
-            print '数据库数据重复'
+            print('数据库数据重复')
             return False
         elif query_list[0].get('blogname') == '':
-            print '标题为空，可上传'
+            print('标题为空，可上传')
             return True
 
     # 数据存入leancloud
@@ -262,9 +262,9 @@ class CSDN_Blog_Spider:
         test_object.set('img', self.imgurl)
         try:
             test_object.save()
-            print '存储成功'
-        except LeanCloudError, e:
-            print e
+            print('存储成功')
+        finally:
+            print("")
 
     def saveFile(self):
         outfile = open(r'D:\123.txt', 'a')
@@ -274,33 +274,31 @@ class CSDN_Blog_Spider:
         bs2 = BeautifulSoup(self.page)
         html = bs2.find('li', class_='prev_article')
         if html == None:
-            print '没有上一篇'
+            print('没有上一篇')
             return None
         else:
             return None  # 不读取上一篇，直接去往下遍历读取最新的文章(注释掉这句则会读取上一篇)
-            print '有上一篇，地址：' + 'http://blog.csdn.net' + html.a['href']
+            print('有上一篇，地址：' + 'http://blog.csdn.net' + html.a['href'])
             return 'http://blog.csdn.net' + html.a['href']
 
     def getLastArticle(self):  # 下一篇
         bs2 = BeautifulSoup(self.page)
         html = bs2.find('li', class_='next_article')
         if html == None:
-            global WAIT_URL
             WAIT_URL = None
-            print '没有下一篇'
+            print('没有下一篇')
         else:
-            print '有下一篇，地址：' + 'http://blog.csdn.net' + html.a['href']
-            global WAIT_URL
+            print('有下一篇，地址：' + 'http://blog.csdn.net' + html.a['href'])
             WAIT_URL = 'http://blog.csdn.net' + html.a['href']
 
     def getLastArticleUrl(self):  # 下一篇
         bs2 = BeautifulSoup(self.page)
         html = bs2.find('li', class_='next_article')
         if html == None:
-            print '没有下一篇'
+            print('没有下一篇')
             return None
         else:
-            print '有下一篇，地址：' + 'http://blog.csdn.net' + html.a['href']
+            print('有下一篇，地址：' + 'http://blog.csdn.net' + html.a['href'])
             return 'http://blog.csdn.net' + html.a['href']
 
 
@@ -309,6 +307,7 @@ class Scheduler:
         self.start_url = url
 
     def start(self):
+        global WAIT_URL
         #  读取云端存储的关注列表 --start
         Todo = leancloud.Object.extend('CSDNReadList')
         query = Todo.query
@@ -322,7 +321,7 @@ class Scheduler:
                 begin_url = first_spider.beginurl
                 if (begin_url != 'nourl'):  # 如果存在url
 
-                    print '获取列表成功，爬取第' + str(url_num) + '个'
+                    print('获取列表成功，爬取第' + str(url_num) + '个')
 
                     spider = CSDN_Blog_Spider(begin_url, 4)  # 4代表初始化，第一次先判断有没有下一篇，如果有则记录，等爬完上一篇回来爬下一篇
 
@@ -331,7 +330,7 @@ class Scheduler:
                         if next_url != None:
                             spider = CSDN_Blog_Spider(next_url, 3)
                         elif next_url is None:  # 没有上一篇，检查下一篇
-                            print '开始爬取下一篇'
+                            print('开始爬取下一篇')
                             global WAIT_URL
                             if WAIT_URL != None:
                                 spider = CSDN_Blog_Spider(WAIT_URL, 3)  # 3 代表下一篇
@@ -343,16 +342,16 @@ class Scheduler:
                                         print('爬虫准备爬下一个地方啦')
                                         break
 
-                                    print '休眠10s'
+                                    print('休眠10s')
                                     time.sleep(10)
-                                    print '休眠结束，继续爬取数据'
+                                    print('休眠结束，继续爬取数据')
 
                             print('爬虫准备爬下一个地方啦')
                             break
 
-                        print '休眠10s'
+                        print('休眠10s')
                         time.sleep(10)
-                        print '休眠结束，继续爬取数据'
+                        print('休眠结束，继续爬取数据')
 
                     url_num = url_num + 1
             else:
