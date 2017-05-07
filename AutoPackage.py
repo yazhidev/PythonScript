@@ -37,7 +37,7 @@ def move_file(apkname, dirname):
         shutil.move(apkname,dirname + "/" + apkname)
     else :
         if(os.path.exists(dirname) == False):
-            print apkname + "不存在"
+            print(apkname + "不存在")
 
 for x in myApks:
     move_file(x.apkname, x.dirname)

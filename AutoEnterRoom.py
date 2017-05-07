@@ -33,6 +33,7 @@ class AutoEnterRoom:
             self.enterRoomY = 500
             self.quitRoomX = 1300
             self.quitRoomY = 610
+            self.waitTime += 15
         elif testPhone == "2":
             print("当前机型：小米平板2")
             self.enterRoomX = 400
