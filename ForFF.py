@@ -19,7 +19,7 @@ ORTHER = u"其他"
 REGISTER_TYPE = 0
 MSG_TYPE = 1
 CARD_TYPE = 2
-SUM = 3 # 总和
+SUM = 3  # 总和
 
 
 # 判断手机/时间列数
@@ -39,11 +39,11 @@ class ReadData:
         self.warning = "\n"
         self.weekMap = {}  # 每周七天分时map，{0:{24个DayInWeekData...], },1:[]} 对应周日分时数据、周一分时数据
         self.allDataMap = {}  # 列表存储每天的渠道列表  {"2017-04-08":[[注册的渠道],[留言的渠道],[名片的渠道],[总数]]、...}
-        self.allSum = 0 #所有线索总和
+        self.allSum = 0  # 所有线索总和
 
         for i in range(24):  # 分时线索列表初始化
-                self.everyBaiduWAPHourNumList.append(0)
-                self.everyBaiduPCHourNumList.append(0)
+            self.everyBaiduWAPHourNumList.append(0)
+            self.everyBaiduPCHourNumList.append(0)
 
     def start(self):
         global REGISTER_TYPE
@@ -72,7 +72,7 @@ class ReadData:
         # 绘制每小时百度线索
         self.writeEveryHourBaiduData()
         # # 消费表
-        # self.readComsumeData()
+        self.readComsumeData()
         print(self.warning)
 
     # 将百度的数据添加到小时列表里
@@ -134,6 +134,7 @@ class ReadData:
             thisUrl = str(thisLine[len(thisLine) - 1])  # 获取最后一列数据，即网址
             time = str(thisLine[timeIndex]).strip()  # 时间
             nowDayTime = time[0: 10]
+            print("--",nowDayTime,"--")
 
             if nowDayTime not in self.allDataMap:  # 还没有这一天的数据
                 thisDayDataList = []  # 当天数据[[注册的渠道],[留言的渠道],[名片的渠道]
@@ -247,7 +248,7 @@ class ReadData:
         self.excel.save(u'数据.xls')
         self.isWriteSheet1 = True
 
-    #写各渠道几个表的线索总和
+    # 写各渠道几个表的线索总和
     def writeSum(self):
         sheet1 = self.excel.get_sheet(u"每天各渠道线索")
         beginRow = 2  # 本日期开始写数据的行号
@@ -267,7 +268,6 @@ class ReadData:
 
             beginRow = beginRow + len(items) + 1
 
-
         self.excel.save(u'数据.xls')
 
     # 读取消费账号
@@ -276,10 +276,22 @@ class ReadData:
         table = data.sheets()[0]  # 第一张表
         fileRows = table.nrows  # 行数
 
-
         for i in range(8, fileRows):  # 从第二行开始
             thisLine = table.row_values(i)  # 获取一整行数据
-            data = xlrd.xldate_as_tuple(thisLine[4], 1)
+            data = xlrd.xldate_as_tuple(thisLine[0], 0)
+            strM = "-"
+            if(data[1] < 10):
+                strM += "0" + str(data[1])
+            else:
+                strM += str(data[1])
+            strD = "-"
+            if(data[2] < 10):
+                strD += "0" + str(data[2])
+            else:
+                strD += str(data[2])
+
+            dayStr = str(data[0]) + strM + strD
+            print("==",dayStr,"==")
             dayOfWeek = 0
             ## 先判断是周几
             if dayOfWeek not in self.weekMap:
@@ -289,17 +301,13 @@ class ReadData:
                     thisDayData.append(DayInWeekData())
                 self.weekMap[dayOfWeek] = thisDayData
 
-            newHourInt = int(str(thisLine[1]).replace(".0", "")) # 小时
-            thisDayData = self.weekMap[dayOfWeek][newHourInt] # 当天数据，例如周一的数据
-            thisDayData.show += int(str(thisLine[3]).replace(".0", "")) # 展现
-            thisDayData.click += int(str(thisLine[4]).replace(".0", "")) # 点击
-            thisDayData.comsumer += thisLine[5] # 消费
+            newHourInt = int(str(thisLine[1]).replace(".0", ""))  # 小时
+            thisDayData = self.weekMap[dayOfWeek][newHourInt]  # 当天数据，例如周一的数据
+            thisDayData.show += int(str(thisLine[3]).replace(".0", ""))  # 展现
+            thisDayData.click += int(str(thisLine[4]).replace(".0", ""))  # 点击
+            thisDayData.comsumer += thisLine[5]  # 消费
 
         print(self.weekMap[0][1].comsumer)
-
-
-
-
 
     # 写入百度分时线索量
     def writeEveryHourBaiduData(self):
@@ -326,12 +334,12 @@ class ReadData:
 # 每周七天分时数据模型
 class DayInWeekData:
     def __init__(self):
-        self.show = 0 # 展现
-        self.click = 0 # 点击
+        self.show = 0  # 展现
+        self.click = 0  # 点击
         self.comsumer = 0  # 消费
         self.number = 0  # 线索量
         self.price = 0  # 线索成本
-        self.clickPercent = 0 #点击率=点击/展现
+        self.clickPercent = 0  # 点击率=点击/展现
 
 
 # 运行
