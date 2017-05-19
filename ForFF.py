@@ -16,13 +16,14 @@ BAIDU_WM = u"百度网盟"
 BAIDU_ZSYX = u"百度知识营销"
 ORTHER = u"其他"
 SOUGOU_NEW = u"新搜狗"
-SU_PC = u"su_pc"
-SU_WAP = u"su_wap"
+SEO_PC = u"seo_pc"
+SEO_WAP = u"seo_wap"
 
 REGISTER_TYPE = 0
 MSG_TYPE = 1
 CARD_TYPE = 2
 SUM = 3  # 总和
+DAY_OF_WEEK_ITEM_NUM = 7  # 分星期表每天的item数
 
 
 # 判断手机/时间列数
@@ -45,7 +46,7 @@ class ReadData:
         self.allDataMap = {}  # 列表存储每天的渠道列表  {"2017-04-08":[[注册的渠道],[留言的渠道],[名片的渠道],[总数]]、...}
         self.allSum = 0  # 所有线索总和
         self.items = [BAIDU_WAP, BAIDU_PC, BAIDU_WM, BAIDU_ZSYX, SOUGOU_WAP, SOUGOU_PC, QIHU360_WAP,
-                      QIHU360_PC, SHENMA, ORTHER, SU_PC, SU_WAP, SOUGOU_NEW]
+                      QIHU360_PC, SHENMA, ORTHER, SEO_PC, SEO_WAP, SOUGOU_NEW]
 
         for i in range(24):  # 分时线索列表初始化
             self.everyBaiduWAPHourNumList.append(0)
@@ -66,9 +67,10 @@ class ReadData:
         global BAIDU_ZSYX
         global ORTHER
         global SOUGOU_NEW
-        global SU_PC
-        global SU_WAP
+        global SEO_PC
+        global SEO_WAP
         global SUM
+        global DAY_OF_WEEK_ITEM_NUM
 
         # 注册
         self.read_data(0, 5, REGISTER_TYPE)  # 参数是 时间是第几列、手机号在第几列、类型（0注册，1留言，2名片）
@@ -178,10 +180,11 @@ class ReadData:
                 self.allDataMap[nowDayTime] = thisDayDataList
 
             mj = self.getMj(thisUrl)
-            if thisUrl == "http://m.fudaojun.com/":  # SU wap
-                self.appendDataToAllDataMap(nowDayTime, type, SU_WAP)
-            elif thisUrl == "http://www.fudaojun.com/":  # SU pc
-                self.appendDataToAllDataMap(nowDayTime, type, SU_PC)
+            thisUrl = thisUrl.strip()
+            if thisUrl == "http://m.fudaojun.com/":  # SEO wap
+                self.appendDataToAllDataMap(nowDayTime, type, SEO_WAP)
+            elif thisUrl == "http://www.fudaojun.com/":  # SEO pc
+                self.appendDataToAllDataMap(nowDayTime, type, SEO_PC)
             elif (thisUrl.find("shenma") != -1) or (mj != -1 and mj.find("sm") != -1):  # 神马
                 self.appendDataToAllDataMap(nowDayTime, type, SHENMA)
             elif thisUrl.find("semwm") != -1:  # 百度网盟
@@ -334,7 +337,7 @@ class ReadData:
                 strD += str(data[2])
 
             dayStr = str(data[0]) + strM + strD
-            dayOfWeek = 0
+            dayOfWeek = self.getDayInWeek(dayStr)
             ## 先判断是周几
             if isPc == True:
                 map = self.weekDataMapBaiduPc
@@ -352,7 +355,7 @@ class ReadData:
             thisDayData = map[dayOfWeek][newHourInt]  # 当天数据，例如周一的数据
             thisDayData.show += int(str(thisLine[3]).replace(".0", ""))  # 展现
             thisDayData.click += int(str(thisLine[4]).replace(".0", ""))  # 点击
-            thisDayData.comsumer += thisLine[5]  # 消费
+            thisDayData.comsumer += float(thisLine[5])  # 消费
 
     # 写入百度分时线索量
     def writeEveryHourBaiduData(self):
@@ -377,7 +380,75 @@ class ReadData:
 
     def writeConsumerData(self):
         sheet3 = self.excel.add_sheet(u"百度分星期表")
+
         # 绘制表头
+        sheet3.write_merge(0, 1, 0, 0, u"渠道", self.style)
+        sheet3.write_merge(0, 1, 1, 1, u"时间", self.style)
+        sheet3.write_merge(2, 25, 0, 0, u"百度PC", self.style)
+        sheet3.write_merge(26, 49, 0, 0, u"百度WAP", self.style)
+
+        drawPcTime = False
+        drawWapTime = False
+
+        dayOfWeekStr = [u"周日", u"周一", u"周二", u"周三", u"周四", u"周五", u"周六"]
+
+        dayBeginX = 2  # 周日开始的x轴数值
+        for i in range(7):  # 遍历0~6
+            sheet3.write_merge(0, 0, dayBeginX, dayBeginX + DAY_OF_WEEK_ITEM_NUM - 1,
+                               dayOfWeekStr[i],
+                               self.style)
+            sheet3.write(1, dayBeginX, u"消费", self.style)
+            sheet3.write(1, dayBeginX + 1, u"展现", self.style)
+            sheet3.write(1, dayBeginX + 2, u"点击", self.style)
+            sheet3.write(1, dayBeginX + 3, u"点击率", self.style)
+            sheet3.write(1, dayBeginX + 4, u"平均点击价格", self.style)
+            sheet3.write(1, dayBeginX + 5, u"线索量", self.style)
+            sheet3.write(1, dayBeginX + 6, u"线索成本", self.style)
+            firstCol = sheet3.col(dayBeginX + 4)
+            firstCol.width = 256 * 12  # 平均点击价格列宽度设大一点
+            dayBeginX += DAY_OF_WEEK_ITEM_NUM
+
+            pcBeginY = 2
+            if str(i) in self.weekDataMapBaiduPc:  # 如果有当天数据，写入excel
+                for hour in range(24):  # 遍历24小时
+                    if drawPcTime == False:  # 绘制PC小时
+                        sheet3.write(pcBeginY + hour, 1, str(hour) + u" 时", self.style)
+                    thisHourData = self.weekDataMapBaiduPc[str(i)][hour]
+                    self.writeData(sheet3, dayBeginX, pcBeginY, hour, thisHourData)
+                drawPcTime = True
+
+            pcBeginY += 24
+            if str(i) in self.weekDataMapBaiduWap:  # 如果有当天数据，写入excel
+                for hour in range(24):  # 遍历24小时
+                    if drawWapTime == False:  # 绘制PC小时
+                        sheet3.write(pcBeginY + hour, 1, str(hour) + u" 时", self.style)
+                    thisHourData = self.weekDataMapBaiduWap[str(i)][hour]
+                    self.writeData(sheet3, dayBeginX, pcBeginY, hour, thisHourData)
+                drawWapTime = True
+
+        self.excel.save(u'数据.xls')
+
+    def writeData(self, sheet, dayBeginX, pcBeginY, hour, thisHourData):
+        sheet.write(pcBeginY + hour, dayBeginX, thisHourData.comsumer,
+                    self.style)  # 消费
+        sheet.write(pcBeginY + hour, dayBeginX + 1, thisHourData.show,
+                    self.style)  # 展现
+        sheet.write(pcBeginY + hour, dayBeginX + 2, thisHourData.click,
+                    self.style)  # 点击
+        sheet.write(pcBeginY + hour, dayBeginX + 3,
+                    thisHourData.show if thisHourData.show == 0 else '%.2f%%' % (round(
+                        thisHourData.click / thisHourData.show, 4) * 100),
+                    self.style)  # 点击率
+        sheet.write(pcBeginY + hour, dayBeginX + 4,
+                    thisHourData.click if thisHourData.click == 0 else round(
+                        thisHourData.comsumer / thisHourData.click, 2),
+                    self.style)  # 平均点击价格
+        sheet.write(pcBeginY + hour, dayBeginX + 5, thisHourData.number,
+                    self.style)  # 线索量
+        sheet.write(pcBeginY + hour, dayBeginX + 6,
+                    -thisHourData.comsumer if thisHourData.number == 0 else round(
+                        thisHourData.comsumer / thisHourData.number, 2),
+                    self.style)  # 线索成本
 
 
 # 每周七天分时数据模型
@@ -387,8 +458,10 @@ class DayInWeekData:
         self.click = 0  # 点击
         self.comsumer = 0  # 消费
         self.number = 0  # 线索量
-        self.price = 0  # 线索成本
+        self.price = 0  # 线索成本=消费/线索量
         self.clickPercent = 0  # 点击率=点击/展现
+        self.averageClickPrice = 0  # 平均点击价格=消费/点击
+        # 新增项目是要去更改项目的数量 DAY_OF_WEEK_ITEM_NUM
 
 
 # 运行
