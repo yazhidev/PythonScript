@@ -26,7 +26,7 @@ class AutoEnterRoom:
             return
 
 
-        testPhone = input("选择机型：1（华为M2平板），2（小米平板2），3（Nexus5），4（红米2A），5（红米），6（vivo）默认1 \n")
+        testPhone = input("选择机型：1（华为M2平板），2（小米平板2），3（Nexus5），4（红米2A）默认1 \n")
         if (testPhone == "1") or (len(testPhone) == 0):
             print("当前机型：华为M2")
             self.enterRoomX = 400
@@ -40,7 +40,6 @@ class AutoEnterRoom:
             self.enterRoomY = 640
             self.quitRoomX = 1480
             self.quitRoomY = 820
-            self.waitTime += 3
         elif testPhone == "3":
             print("当前机型：Nexus5")
             self.enterRoomX = 200
@@ -54,21 +53,7 @@ class AutoEnterRoom:
             self.enterRoomY = 600
             self.quitRoomX = 1000
             self.quitRoomY = 410
-            self.waitTime += 2
-        elif testPhone == "5":
-            print("当前机型：红米")
-            self.enterRoomX = 150
-            self.enterRoomY = 600
-            self.quitRoomX = 1000
-            self.quitRoomY = 410
-            self.waitTime += 2
-        elif testPhone == "6": 
-            print("当前机型：vivo")
-            self.enterRoomX = 150
-            self.enterRoomY = 600
-            self.quitRoomX = 1000
-            self.quitRoomY = 410
-            self.waitTime += 2
+            self.waitTime += 15
         else:
             print("不存在该机型")
             return
@@ -92,11 +77,17 @@ class AutoEnterRoom:
             timeStr = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
             print("时间：",timeStr," 第 ",str(num)," 次进入教室")
             num += 1
-            os.system("adb shell input tap " + str(self.enterRoomX) +  " " + str(self.enterRoomY)) #进入教室
-            time.sleep(self.waitTime) #进教室休眠时间
+            os.system("adb shell input tap 600 2000") #进入教室
+            time.sleep(1)
             os.system("adb shell input keyevent 4")
             time.sleep(1)
-            os.system("adb shell input tap " + str(self.quitRoomX) +  " " + str(self.quitRoomY)) #退出教室确认
+            os.system("adb shell input tap 600 2000")
             time.sleep(4)
+            os.system("adb shell input keyevent 4")
+            time.sleep(1)
+            os.system("adb shell input tap 600 1100")
+            time.sleep(1)   
+            os.system("adb shell input tap 600 1400")
+            time.sleep(2)
 
 AutoEnterRoom().start()
