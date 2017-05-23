@@ -4,6 +4,7 @@ import xlrd
 import xlwt
 import os, sys
 import datetime
+import time
 
 SHENMA = u"神马"
 BAIDU_PC = u"百度pc"
@@ -41,6 +42,7 @@ class ReadData:
         self.everyBaiduPCHourNumList = []  # 记录百度PC每个小时的数量的列表
         self.isWriteSheet1 = False
         self.warning = "\n"
+        self.isReading = ""
         self.weekDataMapBaiduPc = {}  # 每周七天分时map，{0:{24个DayInWeekData...], },1:[]} 对应周日分时数据、周一分时数据
         self.weekDataMapBaiduWap = {}
         self.allDataMap = {}  # 列表存储每天的渠道列表  {"2017-04-08":[[注册的渠道],[留言的渠道],[名片的渠道],[总数]]、...}
@@ -88,7 +90,12 @@ class ReadData:
         # 绘制分星期表
         self.writeConsumerData()
 
-        print(self.warning)
+        if self.warning == "\n":
+            print("数据文件生成成功！3秒后自动关闭程序 \n")
+            time.sleep(3)
+        else:
+            print(self.warning)
+            input("按回车键（Enter键））关闭程序 \n")
 
     # 将百度的数据添加到小时列表里
     def get_every_hour_data(self, isPc, time):
@@ -131,16 +138,18 @@ class ReadData:
         data = 0
         num = 1;
         for fileName in os.listdir(sys.path[0]):
-            if fileName.find(name) != -1:
+            if (fileName.find(name) != -1) and (fileName.find(".xls") != -1) and (
+                    (fileName.find("~$") == -1)):
                 if num > 1:
                     self.warning = self.warning + "警告！ 发现多个 " + name + " 文件 \n"
                 else:
                     print("开始统计：", fileName)
+                    self.isReading = fileName
                     data = xlrd.open_workbook(fileName)  # 读取excel文件
                     num += 1
 
         if data == 0:
-            self.warning = self.warning + "警告！ 未发现 " + name + " 文件 \n"
+            self.warning = self.warning + "警告！ 未发现 " + name + " 文件，是否忘记将 csv 转换格式为  xlsx ?\n"
         return data
 
     def read_data(self, timeIndex, phoneNumIndex, type):  # 参数是 时间是第几列、手机号在第几列、类型（0注册，1留言，2名片）
@@ -309,12 +318,12 @@ class ReadData:
         self.excel.save(u'数据.xls')
 
     # 读取消费账号
-    # zhanghu1 代表PC zhanghu代表wap
+    # zhanghupc 代表PC zhanghuwap
     def readComsumeData(self, isPc):
         if isPc == True:
-            data = self.findExcel("zhanghu1")
+            data = self.findExcel("zhanghupc")
         else:
-            data = self.findExcel("zhanghu")
+            data = self.findExcel("zhanghuwap")
 
         if data == 0:
             return
@@ -347,9 +356,21 @@ class ReadData:
             if dayOfWeek not in map:
                 # 还未存在则初始化
                 thisDayData = []
-                for i in range(24):  # 该天分时线索列表初始化
+                for j in range(24):  # 该天分时线索列表初始化
                     thisDayData.append(DayInWeekData())
                 map[dayOfWeek] = thisDayData
+
+            if isPc == True:
+                if str(thisLine[2]) != "hz微著": # 简单判断文件内容是否有误
+                    self.warning = self.warning + "警告！ zhanghuPC 文件内第 " + str(
+                        i) + " 行发现 非'hz微著' 标识，请检查文件是否正确 \n"
+                    return
+
+            if isPc == False:
+                if str(thisLine[2]) != "微著网络":
+                    self.warning = self.warning + "警告！ zhanghuWAP 文件内第 " + str(
+                        i) + " 行发现 非'微著网络' 标识，请检查文件是否正确 \n"
+                    return
 
             newHourInt = int(str(thisLine[1]).replace(".0", ""))  # 小时
             thisDayData = map[dayOfWeek][newHourInt]  # 当天数据，例如周一的数据
@@ -406,7 +427,6 @@ class ReadData:
             sheet3.write(1, dayBeginX + 6, u"线索成本", self.style)
             firstCol = sheet3.col(dayBeginX + 4)
             firstCol.width = 256 * 12  # 平均点击价格列宽度设大一点
-            dayBeginX += DAY_OF_WEEK_ITEM_NUM
 
             pcBeginY = 2
             if str(i) in self.weekDataMapBaiduPc:  # 如果有当天数据，写入excel
@@ -425,6 +445,8 @@ class ReadData:
                     thisHourData = self.weekDataMapBaiduWap[str(i)][hour]
                     self.writeData(sheet3, dayBeginX, pcBeginY, hour, thisHourData)
                 drawWapTime = True
+
+            dayBeginX += DAY_OF_WEEK_ITEM_NUM
 
         self.excel.save(u'数据.xls')
 
@@ -465,6 +487,15 @@ class DayInWeekData:
 
 
 # 运行
-ReadData().start()
+readData = ReadData()
+try:
+    readData.start()
+except Exception as e:
+    if str(e).find("Permission denied: '数据.xls") != -1:
+        print("警告！ 保存数据错误，请关闭  数据.xls  文件后重试 \n")
+        input("按回车键（Enter键））关闭程序 \n")
+    else:
+        print("警告！ 请检查", readData.isReading, "文件格式、内容是否有误，如果文件没有问题请联系小帅修复程序 \n")
+        input("按回车键（Enter键））关闭程序 \n")
 
-# ppip install pyexcel-xls 安装模块
+# pip install pyexcel-xls 安装模块
