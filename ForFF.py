@@ -6,24 +6,9 @@ import os, sys
 import datetime
 import time
 
-SHENMA = u"神马"
-BAIDU_PC = u"百度pc"
-BAIDU_WAP = u"百度wap"
-SOUGOU_PC = u"搜狗pc"
-SOUGOU_WAP = u"搜狗wap"
-QIHU360_PC = u"360_pc"
-QIHU360_WAP = u"360_wap"
-BAIDU_WM = u"百度网盟"
-BAIDU_ZSYX = u"百度知识营销"
-ORTHER = u"其他"
-SOUGOU_NEW = u"新搜狗"
-SEO_PC = u"seo_pc"
-SEO_WAP = u"seo_wap"
-
 REGISTER_TYPE = 0
 MSG_TYPE = 1
 CARD_TYPE = 2
-SUM = 3  # 总和
 DAY_OF_WEEK_ITEM_NUM = 7  # 分星期表每天的item数
 
 
@@ -38,53 +23,30 @@ class ReadData:
         alignment.horz = xlwt.Alignment.HORZ_CENTER
         alignment.vert = xlwt.Alignment.VERT_CENTER
         self.style.alignment = alignment
-        self.everyBaiduWAPHourNumList = []  # 记录百度WAP每个小时的数量的列表
-        self.everyBaiduPCHourNumList = []  # 记录百度PC每个小时的数量的列表
         self.isWriteSheet1 = False
         self.warning = "\n"
         self.isReading = ""
+        self.allDataMap = {}  # 列表存储每天的渠道列表  {"2017-04-08": DayData、...}
         self.weekDataMapBaiduPc = {}  # 每周七天分时map，{0:{24个DayInWeekData...], },1:[]} 对应周日分时数据、周一分时数据
         self.weekDataMapBaiduWap = {}
-        self.allDataMap = {}  # 列表存储每天的渠道列表  {"2017-04-08":[[注册的渠道],[留言的渠道],[名片的渠道],[总数]]、...}
-        self.allSum = 0  # 所有线索总和
-        self.items = [BAIDU_WAP, BAIDU_PC, BAIDU_WM, BAIDU_ZSYX, SOUGOU_WAP, SOUGOU_PC, QIHU360_WAP,
-                      QIHU360_PC, SHENMA, ORTHER, SEO_PC, SEO_WAP, SOUGOU_NEW]
-
-        for i in range(24):  # 分时线索列表初始化
-            self.everyBaiduWAPHourNumList.append(0)
-            self.everyBaiduPCHourNumList.append(0)
 
     def start(self):
         global REGISTER_TYPE
         global MSG_TYPE
         global CARD_TYPE
-        global BAIDU_WAP
-        global SHENMA
-        global SOUGOU_PC
-        global SOUGOU_WAP
-        global QIHU360_WAP
-        global BAIDU_WAP
-        global QIHU360_PC
-        global BAIDU_WM
-        global BAIDU_ZSYX
-        global ORTHER
-        global SOUGOU_NEW
-        global SEO_PC
-        global SEO_WAP
-        global SUM
         global DAY_OF_WEEK_ITEM_NUM
 
-        # 注册
+        # 读取注册表
         self.read_data(0, 5, REGISTER_TYPE)  # 参数是 时间是第几列、手机号在第几列、类型（0注册，1留言，2名片）
-        # 留言
+        # 读取留言表
         self.read_data(2, 5, MSG_TYPE)
-        # 名片
+        # 读取名片表
         self.read_data(12, 5, CARD_TYPE)
-        # 绘制各渠道几个表线索总和
-        self.writeSum()
+        # 绘制各渠道线索表
+        self.writeChannelData()
         # 绘制每小时百度线索
         self.writeEveryHourBaiduData()
-        # 消费表
+        # 读取账户消费表
         self.readComsumeData(True)
         self.readComsumeData(False)
         # 绘制分星期表
@@ -98,18 +60,18 @@ class ReadData:
             input("按回车键（Enter键））关闭程序 \n")
 
     # 将百度的数据添加到小时列表里
-    def get_every_hour_data(self, isPc, time):
+    def get_every_hour_data(self, isPc, time, data):
         nowHourTime = time[11: 13]
         if nowHourTime[0:1] == "0":
             hourIndex = int(nowHourTime[1:2])  # 获取小时列表的行号
         else:
             hourIndex = int(nowHourTime)
 
+        data[hourIndex] += 1
+
+        # 添加分星期数据
         dayOfWeek = self.getDayInWeek(time)
-
         if isPc == True:
-            self.everyBaiduPCHourNumList[hourIndex] += 1
-
             ## 先判断是周几
             if dayOfWeek not in self.weekDataMapBaiduPc:
                 # 还未存在则初始化
@@ -121,8 +83,6 @@ class ReadData:
             # 添加线索到分星期消费表中
             self.weekDataMapBaiduPc[dayOfWeek][hourIndex].number += 1
         else:
-            self.everyBaiduWAPHourNumList[hourIndex] += 1
-
             ## 先判断是周几
             if dayOfWeek not in self.weekDataMapBaiduWap:
                 # 还未存在则初始化
@@ -183,59 +143,51 @@ class ReadData:
             nowDayTime = time[0: 10]
 
             if nowDayTime not in self.allDataMap:  # 还没有这一天的数据
-                thisDayDataList = []  # 当天数据[[注册的渠道],[留言的渠道],[名片的渠道]
-                for j in range(SUM + 1):  # 初始化当天三种来源列表
-                    thisDayDataList.append([])
-                self.allDataMap[nowDayTime] = thisDayDataList
+                self.allDataMap[nowDayTime] = DayData()
 
             mj = self.getMj(thisUrl)
             thisUrl = thisUrl.strip()
+            thisDayData = self.allDataMap[nowDayTime]
+            thisDayData.all.addNum(type)
             if thisUrl == "http://m.fudaojun.com/":  # SEO wap
-                self.appendDataToAllDataMap(nowDayTime, type, SEO_WAP)
+                thisDayData.seowap.addNum(type)
             elif thisUrl == "http://www.fudaojun.com/":  # SEO pc
-                self.appendDataToAllDataMap(nowDayTime, type, SEO_PC)
+                thisDayData.seopc.addNum(type)
             elif (thisUrl.find("shenma") != -1) or (mj != -1 and mj.find("sm") != -1):  # 神马
-                self.appendDataToAllDataMap(nowDayTime, type, SHENMA)
+                thisDayData.shenma.addNum(type)
             elif thisUrl.find("semwm") != -1:  # 百度网盟
-                self.appendDataToAllDataMap(nowDayTime, type, BAIDU_WM)
+                thisDayData.baiduwm.addNum(type)
             elif thisUrl.find("semzhishiyingxiao") != -1:  # 百度知识营销
-                self.appendDataToAllDataMap(nowDayTime, type, BAIDU_ZSYX)
+                thisDayData.baiduzs.addNum(type)
             elif thisUrl.find("http://fudaojun.yytsw.net.cn/") != -1:  # 新搜狗
-                self.appendDataToAllDataMap(nowDayTime, type, SOUGOU_NEW)
+                thisDayData.sogouNew.addNum(type)
             elif thisUrl.find("http://m.fudaojun.com/") != -1:  # wap端
                 if (thisUrl.find("sogou") != -1) or (mj != -1 and mj.find("sg") != -1):  # 搜狗
-                    self.appendDataToAllDataMap(nowDayTime, type, SOUGOU_WAP)
+                    thisDayData.sogouwap.addNum(type)
                 elif thisUrl.find("360") != -1:  # 360
-                    self.appendDataToAllDataMap(nowDayTime, type, QIHU360_WAP)
+                    thisDayData.wap360.addNum(type)
                 elif len(thisUrl) > 0:  # 其他算百度
-                    self.appendDataToAllDataMap(nowDayTime, type, BAIDU_WAP)
-                    self.get_every_hour_data(False, time)
+                    thisDayData.baiduwap.addNum(type)
+                    self.get_every_hour_data(False, time, thisDayData.baiduwap.hourNumList)
 
                 else:  # 没有地址算其他
-                    self.appendDataToAllDataMap(nowDayTime, type, ORTHER)
+                    thisDayData.other.addNum(type)
                     # 什么都没带属于百度
                     # 地址为空 属于其他
                     # semwm  百度网盟 不分PC WAP
                     # semzhishiyingxiao  百度知识营销
-
                     # 其他百度
 
             else:  # PC端
                 if (thisUrl.find("sogou") != -1) or (mj != -1 and mj.find("sg") != -1):  # 搜狗
-                    self.appendDataToAllDataMap(nowDayTime, type, SOUGOU_PC)
+                    thisDayData.sogopc.addNum(type)
                 elif thisUrl.find("360") != -1:  # 360
-                    self.appendDataToAllDataMap(nowDayTime, type, QIHU360_PC)
+                    thisDayData.pc360.addNum(type)
                 elif len(thisUrl) > 0:  # 其他算百度，没有地址算其他
-                    self.appendDataToAllDataMap(nowDayTime, type, BAIDU_PC)
-                    self.get_every_hour_data(True, time)
+                    thisDayData.baidupc.addNum(type)
+                    self.get_every_hour_data(True, time, thisDayData.baidupc.hourNumList)
                 else:
-                    self.appendDataToAllDataMap(nowDayTime, type, ORTHER)
-
-        self.write_excel(self.allDataMap, type)
-
-    def appendDataToAllDataMap(self, dayTime, type, item):
-        self.allDataMap[dayTime][type].append(item)
-        self.allDataMap[dayTime][SUM].append(item)
+                    thisDayData.other.addNum(type)
 
     def getMj(self, thisUrl):
         mj = -1
@@ -251,7 +203,7 @@ class ReadData:
         return datetime.datetime(int(time[0:4]), int(time[5:7]), int(time[8:10])).strftime("%w");
 
     # 写入当前读取到时间与各渠道数量
-    def write_excel(self, allDataMap, type):
+    def writeChannelData(self):
         if self.isWriteSheet1 == False:
             sheet1 = self.excel.add_sheet(u"每天各渠道线索")
             # 绘制表头
@@ -266,56 +218,34 @@ class ReadData:
             sheet1.write(1, 3, u"留言", self.style)
             sheet1.write(1, 4, u"名片", self.style)
             sheet1.write(1, 5, u"总计", self.style)
-
         else:
             sheet1 = self.excel.get_sheet(u"每天各渠道线索")
 
         beginRow = 2  # 本日期开始写数据的行号
-        dataLine = 2 + type  # 写入数据的列号
 
-        for keyOfDay in allDataMap:  # 遍历map里所有的时间
-            thisList = allDataMap[keyOfDay]
-            if self.isWriteSheet1 == False:
-                sheet1.write_merge(beginRow, beginRow + len(self.items), 0, 0, keyOfDay, self.style)
+        for keyOfDay in self.allDataMap:  # 遍历map里所有的时间
+            thisDayData = self.allDataMap[keyOfDay]
+            i = 0
+            if thisDayData.isWriteTime == False:
+                sheet1.write_merge(beginRow, beginRow + thisDayData.itemNum - 1, 0, 0, keyOfDay,
+                                   self.style)  # 写时间
+                thisDayData.isWriteTime = True
+            for name, value in vars(thisDayData).items():  # 遍历当天数据的所有渠道
+                if (name == "itemNum") or (name == "isWriteTime"):
+                    continue
+                if value.isWriteName == False:
+                    sheet1.write(beginRow + i, 1, value.name, self.style)  # 写渠道名
+                    value.isWriteName = True
+                sheet1.write(beginRow + i, 2, value.register, self.style)  # 注册
+                sheet1.write(beginRow + i, 3, value.msg, self.style)  # 留言
+                sheet1.write(beginRow + i, 4, value.card, self.style)  # 名片
+                sheet1.write(beginRow + i, 5, value.all, self.style)  # 总计
+                i += 1
 
-            num = 0
-            for i in range(len(self.items)):  # 遍历一天内所有的渠道的线索数量
-                if self.isWriteSheet1 == False:
-                    sheet1.write(beginRow + i, 1, self.items[i], self.style)  # 写渠道名
-                    if i == 0:
-                        sheet1.write(beginRow + len(self.items), 1, u"总计", self.style)  # 总和
-                thisItemNum = thisList[type].count(self.items[i])  # 某个渠线索道数量
-                sheet1.write(beginRow + i, dataLine, thisItemNum, self.style)  # 写线索数
-                num += thisItemNum
-                # 读取该渠道总和列的数值，加上这个表的总和
-
-            # 这个表的线索总和
-            self.allSum += num
-            sheet1.write(beginRow + len(self.items), dataLine, num, self.style)
-
-            beginRow = beginRow + len(self.items) + 1
+            beginRow = beginRow + thisDayData.itemNum
 
         self.excel.save(u'数据.xls')
         self.isWriteSheet1 = True
-
-    # 写各渠道几个表的线索总和
-    def writeSum(self):
-        sheet1 = self.excel.get_sheet(u"每天各渠道线索")
-        beginRow = 2  # 本日期开始写数据的行号
-        dataLine = 2 + SUM  # 写入数据的列号
-
-        for keyOfDay in self.allDataMap:  # 遍历map里所有的时间
-            thisList = self.allDataMap[keyOfDay]
-            for i in range(len(self.items)):  # 遍历一天内所有的渠道的线索数量
-                thisItemSum = thisList[SUM].count(self.items[i])  # 某个渠线索道数量
-                sheet1.write(beginRow + i, dataLine, thisItemSum, self.style)  # 写线索数
-                # 读取该渠道总和列的数值，加上这个表的总和
-
-            sheet1.write(beginRow + len(self.items), dataLine, self.allSum, self.style)
-
-            beginRow = beginRow + len(self.items) + 1
-
-        self.excel.save(u'数据.xls')
 
     # 读取消费账号
     # zhanghupc 代表PC zhanghuwap
@@ -361,7 +291,7 @@ class ReadData:
                 map[dayOfWeek] = thisDayData
 
             if isPc == True:
-                if str(thisLine[2]) != "hz微著": # 简单判断文件内容是否有误
+                if str(thisLine[2]) != "hz微著":  # 简单判断文件内容是否有误
                     self.warning = self.warning + "警告！ zhanghuPC 文件内第 " + str(
                         i) + " 行发现 非'hz微著' 标识，请检查文件是否正确 \n"
                     return
@@ -382,20 +312,37 @@ class ReadData:
     def writeEveryHourBaiduData(self):
         sheet2 = self.excel.add_sheet(u"百度分时段线索")
         # 绘制表头
-        sheet2.write(0, 0, u"渠道", self.style)
-        sheet2.write(0, 1, u"时段", self.style)
-        sheet2.write(0, 2, u"线索量", self.style)
-        sheet2.write(0, 4, u"渠道", self.style)
-        sheet2.write(0, 5, u"时段", self.style)
-        sheet2.write(0, 6, u"线索量", self.style)
-        sheet2.write_merge(1, 24, 0, 0, u"百度PC", self.style)
-        sheet2.write_merge(1, 24, 4, 4, u"百度WAP", self.style)
+        sheet2.write(0, 0, u"时间", self.style)
+        firstCol = sheet2.col(0)
+        firstCol.width = 256 * 15  # 时间列宽度设大一点
+        sheet2.write(0, 1, u"渠道", self.style)
+        sheet2.write(0, 2, u"时段", self.style)
+        sheet2.write(0, 3, u"线索量", self.style)
+        sheet2.write(0, 5, u"渠道", self.style)
+        sheet2.write(0, 6, u"时段", self.style)
+        sheet2.write(0, 7, u"线索量", self.style)
 
-        for i in range(len(self.everyBaiduPCHourNumList)):
-            sheet2.write(1 + i, 1, str(i) + u" 时", self.style)
-            sheet2.write(1 + i, 2, self.everyBaiduPCHourNumList[i], self.style)
-            sheet2.write(1 + i, 5, str(i) + u" 时", self.style)
-            sheet2.write(1 + i, 6, self.everyBaiduWAPHourNumList[i], self.style)
+        beginY = 1
+
+        for keyOfDay in self.allDataMap:  # 遍历map里所有的时间
+            thisDayData = self.allDataMap[keyOfDay]
+            if thisDayData.isWriteTime == True:
+                sheet2.write_merge(beginY, beginY + 23, 0, 0, keyOfDay,
+                                   self.style)  # 写时间
+                thisDayData.isWriteTime = False
+
+            sheet2.write_merge(beginY, beginY + 23, 1, 1, u"百度PC", self.style)
+            sheet2.write_merge(beginY, beginY + 23, 4, 4, u"百度WAP", self.style)
+
+            for i in range(len(thisDayData.baiduwap.hourNumList)):
+                # 绘制百度pc分时
+                sheet2.write(beginY + i, 2, str(i) + u" 时", self.style)
+                sheet2.write(beginY + i, 3, thisDayData.baidupc.hourNumList[i], self.style)
+                # 绘制百度wap分时
+                sheet2.write(beginY + i, 5, str(i) + u" 时", self.style)
+                sheet2.write(beginY + i, 6, thisDayData.baiduwap.hourNumList[i], self.style)
+
+            beginY += 24
 
         self.excel.save(u'数据.xls')
 
@@ -486,16 +433,69 @@ class DayInWeekData:
         # 新增项目是要去更改项目的数量 DAY_OF_WEEK_ITEM_NUM
 
 
+# 每天的数据
+class DayData:
+    def __init__(self):
+        self.itemNum = 14  # 总渠道数
+        self.isWriteTime = False  # 是否绘制过时间
+        self.baiduwap = ChannelData(u"百度wap")
+        self.baiduwap.initHourData()
+        self.baidupc = ChannelData(u"百度PC")
+        self.baidupc.initHourData()
+        self.baiduwm = ChannelData(u"百度网盟")
+        self.baiduzs = ChannelData(u"百度知识营销")
+        self.sogouwap = ChannelData(u"搜狗wap")
+        self.sogopc = ChannelData(u"搜狗pc")
+        self.wap360 = ChannelData(u"360wap")
+        self.pc360 = ChannelData(u"360pc")
+        self.shenma = ChannelData(u"神马")
+        self.other = ChannelData(u"其他")
+        self.seopc = ChannelData(u"seo_pc")
+        self.seowap = ChannelData(u"seo_wap")
+        self.sogouNew = ChannelData(u"新搜狗")
+        self.all = ChannelData(u"总计")
+
+
+# 渠道数据
+class ChannelData:
+    def __init__(self, name):
+        self.name = name
+        self.register = 0  # 注册
+        self.msg = 0  # 留言
+        self.card = 0  # 名片
+        self.all = 0  # 总计
+        self.hourNumList = []  # 分时数据 hourNumList[3]的值代表3时的线索量
+        self.isWriteName = False  # 是否绘制过渠道名
+
+    def initHourData(self):
+        # 初始化分时数据
+        for i in range(24):
+            self.hourNumList.append(0)
+
+    def addNum(self, type):  # 对应渠道数量+1
+        if type == REGISTER_TYPE:
+            self.register += 1
+            self.all += 1
+        elif type == MSG_TYPE:
+            self.msg += 1
+            self.all += 1
+        elif type == CARD_TYPE:
+            self.card += 1
+            self.all += 1
+        else:
+            return
+
+
 # 运行
 readData = ReadData()
-try:
-    readData.start()
-except Exception as e:
-    if str(e).find("Permission denied: '数据.xls") != -1:
-        print("警告！ 保存数据错误，请关闭  数据.xls  文件后重试 \n")
-        input("按回车键（Enter键））关闭程序 \n")
-    else:
-        print("警告！ 请检查", readData.isReading, "文件格式、内容是否有误，如果文件没有问题请联系小帅修复程序 \n")
-        input("按回车键（Enter键））关闭程序 \n")
+readData.start()
+# try:
+# except Exception as e:
+#     if str(e).find("Permission denied: '数据.xls") != -1:
+#         print("警告！ 保存数据错误，请关闭  数据.xls  文件后重试 \n")
+#         input("按回车键（Enter键））关闭程序 \n")
+#     else:
+#         print("警告！ 请检查", readData.isReading, "文件格式、内容是否有误，如果文件没有问题请联系小帅修复程序 \n")
+#         input("按回车键（Enter键））关闭程序 \n")
 
 # pip install pyexcel-xls 安装模块
