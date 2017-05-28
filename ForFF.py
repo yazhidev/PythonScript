@@ -29,6 +29,7 @@ class ReadData:
         self.allDataMap = {}  # 列表存储每天的渠道列表  {"2017-04-08": DayData、...}
         self.weekDataMapBaiduPc = {}  # 每周七天分时map，{0:{24个DayInWeekData...], },1:[]} 对应周日分时数据、周一分时数据
         self.weekDataMapBaiduWap = {}
+        self.dataDetailList = []
 
     def start(self):
         global REGISTER_TYPE
@@ -51,6 +52,8 @@ class ReadData:
         self.readComsumeData(False)
         # 绘制分星期表
         self.writeConsumerData()
+        # 绘制线索信息表
+        self.writeDataDetail()
 
         if self.warning == "\n":
             print("数据文件生成成功！3秒后自动关闭程序 \n")
@@ -138,6 +141,11 @@ class ReadData:
             if thisPhontNum in self.phoneNumList:  # 重复手机号，去重，忽略本条
                 continue
             self.phoneNumList.append(thisPhontNum)  # 添加手机号
+
+            # 添加线索数据，并设置数据
+            thisData = DataDetail(type)
+            thisData.setData(thisLine)
+
             thisUrl = str(thisLine[len(thisLine) - 1])  # 获取最后一列数据，即网址
             time = str(thisLine[timeIndex]).strip()  # 时间
             nowDayTime = time[0: 10]
@@ -151,27 +159,37 @@ class ReadData:
             thisDayData.all.addNum(type)
             if thisUrl == "http://m.fudaojun.com/":  # SEO wap
                 thisDayData.seowap.addNum(type)
+                thisData.channel = thisDayData.seowap.name
             elif thisUrl == "http://www.fudaojun.com/":  # SEO pc
                 thisDayData.seopc.addNum(type)
+                thisData.channel = thisDayData.seopc.name
             elif (thisUrl.find("shenma") != -1) or (mj != -1 and mj.find("sm") != -1):  # 神马
                 thisDayData.shenma.addNum(type)
+                thisData.channel = thisDayData.shenma.name
             elif thisUrl.find("semwm") != -1:  # 百度网盟
                 thisDayData.baiduwm.addNum(type)
+                thisData.channel = thisDayData.baiduwm.name
             elif thisUrl.find("semzhishiyingxiao") != -1:  # 百度知识营销
                 thisDayData.baiduzs.addNum(type)
+                thisData.channel = thisDayData.baiduzs.name
             elif thisUrl.find("http://fudaojun.yytsw.net.cn/") != -1:  # 新搜狗
                 thisDayData.sogouNew.addNum(type)
+                thisData.channel = thisDayData.sogouNew.name
             elif thisUrl.find("http://m.fudaojun.com/") != -1:  # wap端
                 if (thisUrl.find("sogou") != -1) or (mj != -1 and mj.find("sg") != -1):  # 搜狗
-                    thisDayData.sogouwap.addNum(type)
+                    thisDayData.sogouNew.addNum(type)
+                    thisData.channel = thisDayData.sogouNew.name
                 elif thisUrl.find("360") != -1:  # 360
                     thisDayData.wap360.addNum(type)
+                    thisData.channel = thisDayData.wap360.name
                 elif len(thisUrl) > 0:  # 其他算百度
                     thisDayData.baiduwap.addNum(type)
+                    thisData.channel = thisDayData.baiduwap.name
                     self.get_every_hour_data(False, time, thisDayData.baiduwap.hourNumList)
 
                 else:  # 没有地址算其他
                     thisDayData.other.addNum(type)
+                    thisData.channel = thisDayData.other.name
                     # 什么都没带属于百度
                     # 地址为空 属于其他
                     # semwm  百度网盟 不分PC WAP
@@ -181,13 +199,19 @@ class ReadData:
             else:  # PC端
                 if (thisUrl.find("sogou") != -1) or (mj != -1 and mj.find("sg") != -1):  # 搜狗
                     thisDayData.sogopc.addNum(type)
+                    thisData.channel = thisDayData.sogopc.name
                 elif thisUrl.find("360") != -1:  # 360
                     thisDayData.pc360.addNum(type)
+                    thisData.channel = thisDayData.pc360.name
                 elif len(thisUrl) > 0:  # 其他算百度，没有地址算其他
                     thisDayData.baidupc.addNum(type)
+                    thisData.channel = thisDayData.baidupc.name
                     self.get_every_hour_data(True, time, thisDayData.baidupc.hourNumList)
                 else:
                     thisDayData.other.addNum(type)
+                    thisData.channel = thisDayData.other.name
+
+            self.dataDetailList.append(thisData)
 
     def getMj(self, thisUrl):
         mj = -1
@@ -419,6 +443,41 @@ class ReadData:
                         thisHourData.comsumer / thisHourData.number, 2),
                     self.style)  # 线索成本
 
+    def writeDataDetail(self):
+        sheet4 = self.excel.add_sheet(u"线索数据表")
+
+        # 绘制表头
+        sheet4.write(0, 0, u"渠道", self.style)
+        sheet4.write(0, 1, u"来源", self.style)
+        sheet4.write(0, 2, u"创建时间", self.style)
+        sheet4.write(0, 3, u"姓名", self.style)
+        sheet4.write(0, 4, u"手机", self.style)
+        sheet4.write(0, 5, u"访客地区", self.style)
+        sheet4.write(0, 6, u"搜索词", self.style)
+        sheet4.write(0, 7, u"最初访问", self.style)
+
+        col1 = sheet4.col(2)
+        col1.width = 256 * 19
+        col2 = sheet4.col(4)
+        col2.width = 256 * 15
+        col3 = sheet4.col(5)
+        col3.width = 256 * 16
+        col4 = sheet4.col(6)
+        col4.width = 256 * 19
+        col5 = sheet4.col(7)
+        col5.width = 256 * 19
+
+        for index,value in enumerate(self.dataDetailList):
+            sheet4.write(index + 1, 0, value.channel)
+            sheet4.write(index + 1, 1, value.type, self.style)
+            sheet4.write(index + 1, 2, value.time, self.style)
+            sheet4.write(index + 1, 3, value.userName)
+            sheet4.write(index + 1, 4, value.userPhone, self.style)
+            sheet4.write(index + 1, 5, value.location)
+            sheet4.write(index + 1, 6, value.keyWord)
+            sheet4.write(index + 1, 7, value.firstUrl)
+
+        self.excel.save(u'数据.xls')
 
 # 每周七天分时数据模型
 class DayInWeekData:
@@ -455,7 +514,6 @@ class DayData:
         self.sogouNew = ChannelData(u"新搜狗")
         self.all = ChannelData(u"总计")
 
-
 # 渠道数据
 class ChannelData:
     def __init__(self, name):
@@ -484,6 +542,44 @@ class ChannelData:
             self.all += 1
         else:
             return
+
+# 线索数据表
+class DataDetail:
+    def __init__(self, type):
+        self.channel = ""
+        self.type = type
+        self.time = ""
+        self.userName = ""
+        self.userPhone = ""
+        self.location = ""
+        self.keyWord = ""
+        self.firstUrl = ""
+
+    def setData(self, data):
+        indexs = []
+        if self.type == REGISTER_TYPE:
+            self.type = u"注册" # 注册/留言/名片
+            indexs = [0, 2, 5, 10, 12, len(data) - 1]
+        elif self.type == MSG_TYPE:
+            self.type = u"留言" # 注册/留言/名片
+            indexs = [2, 4, 5, 15, 18, len(data) - 1]
+        elif self.type == CARD_TYPE:
+            self.type = u"名片" # 注册/留言/名片
+            indexs = [12, 0, 5, 18, 21, len(data) - 1]
+
+        time = str(data[indexs[0]]).strip()
+        if time[len(time)-2:] == ".0":
+            time = time[:len(time)-2]
+        self.time = time  # 获取时间
+        self.userName = str(data[indexs[1]]).strip()  # 获取用户名
+        phone = str(data[indexs[2]]).strip()
+        if phone[len(phone)-2:] == ".0":
+            phone = phone[:len(phone)-2]
+        self.userPhone = phone  # 获取手机
+        self.location = str(data[indexs[3]]).strip()  # 获取地点
+        self.keyWord = str(data[indexs[4]]).strip()  # 获取关键词
+        self.firstUrl = str(data[indexs[5]]).strip()  # 获取地址
+
 
 
 # 运行
