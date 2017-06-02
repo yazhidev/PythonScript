@@ -177,8 +177,8 @@ class ReadData:
                 thisData.channel = thisDayData.sogouNew.name
             elif thisUrl.find("http://m.fudaojun.com/") != -1:  # wap端
                 if (thisUrl.find("sogou") != -1) or (mj != -1 and mj.find("sg") != -1):  # 搜狗
-                    thisDayData.sogouNew.addNum(type)
-                    thisData.channel = thisDayData.sogouNew.name
+                    thisDayData.sogouwap.addNum(type)
+                    thisData.channel = thisDayData.sogouwap.name
                 elif thisUrl.find("360") != -1:  # 360
                     thisDayData.wap360.addNum(type)
                     thisData.channel = thisDayData.wap360.name
@@ -504,7 +504,7 @@ class DayData:
         self.baiduwm = ChannelData(u"百度网盟")
         self.baiduzs = ChannelData(u"百度知识营销")
         self.sogouwap = ChannelData(u"搜狗wap")
-        self.sogopc = ChannelData(u"搜狗pc")
+        self.sogoupc = ChannelData(u"搜狗pc")
         self.wap360 = ChannelData(u"360wap")
         self.pc360 = ChannelData(u"360pc")
         self.shenma = ChannelData(u"神马")
