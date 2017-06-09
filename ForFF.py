@@ -163,6 +163,9 @@ class ReadData:
             elif thisUrl == "http://www.fudaojun.com/":  # SEO pc
                 thisDayData.seopc.addNum(type)
                 thisData.channel = thisDayData.seopc.name
+            elif thisUrl.find("http://fudaojun.dayijun.com/") != -1:  # 神马2
+                thisDayData.shenma2.addNum(type)
+                thisData.channel = thisDayData.shenma2.name
             elif (thisUrl.find("shenma") != -1) or (mj != -1 and mj.find("sm") != -1):  # 神马
                 thisDayData.shenma.addNum(type)
                 thisData.channel = thisDayData.shenma.name
@@ -198,8 +201,8 @@ class ReadData:
 
             else:  # PC端
                 if (thisUrl.find("sogou") != -1) or (mj != -1 and mj.find("sg") != -1):  # 搜狗
-                    thisDayData.sogopc.addNum(type)
-                    thisData.channel = thisDayData.sogopc.name
+                    thisDayData.sogoupc.addNum(type)
+                    thisData.channel = thisDayData.sogoupc.name
                 elif thisUrl.find("360") != -1:  # 360
                     thisDayData.pc360.addNum(type)
                     thisData.channel = thisDayData.pc360.name
@@ -342,9 +345,9 @@ class ReadData:
         sheet2.write(0, 1, u"渠道", self.style)
         sheet2.write(0, 2, u"时段", self.style)
         sheet2.write(0, 3, u"线索量", self.style)
-        sheet2.write(0, 5, u"渠道", self.style)
-        sheet2.write(0, 6, u"时段", self.style)
-        sheet2.write(0, 7, u"线索量", self.style)
+        sheet2.write(0, 4, u"渠道", self.style)
+        sheet2.write(0, 5, u"时段", self.style)
+        sheet2.write(0, 6, u"线索量", self.style)
 
         beginY = 1
 
@@ -495,7 +498,7 @@ class DayInWeekData:
 # 每天的数据
 class DayData:
     def __init__(self):
-        self.itemNum = 14  # 总渠道数
+        self.itemNum = 15  # 总渠道数
         self.isWriteTime = False  # 是否绘制过时间
         self.baiduwap = ChannelData(u"百度wap")
         self.baiduwap.initHourData()
@@ -512,6 +515,7 @@ class DayData:
         self.seopc = ChannelData(u"seo_pc")
         self.seowap = ChannelData(u"seo_wap")
         self.sogouNew = ChannelData(u"新搜狗")
+        self.shenma2 = ChannelData(u"神马2")
         self.all = ChannelData(u"总计")
 
 # 渠道数据
