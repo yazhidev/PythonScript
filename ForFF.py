@@ -166,6 +166,12 @@ class ReadData:
             elif thisUrl.find("http://fudaojun.dayijun.com/") != -1:  # 神马2
                 thisDayData.shenma2.addNum(type)
                 thisData.channel = thisDayData.shenma2.name
+            elif thisUrl.find("weixin") != -1:  # 微信
+                thisDayData.weixin.addNum(type)
+                thisData.channel = thisDayData.weixin.name
+            elif thisUrl.find("http://fudaojun.yytby.net.cn/") != -1:  # 搜狗2
+                thisDayData.sogou2.addNum(type)
+                thisData.channel = thisDayData.sogou2.name
             elif (thisUrl.find("shenma") != -1) or (mj != -1 and mj.find("sm") != -1):  # 神马
                 thisDayData.shenma.addNum(type)
                 thisData.channel = thisDayData.shenma.name
@@ -498,7 +504,7 @@ class DayInWeekData:
 # 每天的数据
 class DayData:
     def __init__(self):
-        self.itemNum = 15  # 总渠道数
+        self.itemNum = 17  # 总渠道数
         self.isWriteTime = False  # 是否绘制过时间
         self.baiduwap = ChannelData(u"百度wap")
         self.baiduwap.initHourData()
@@ -516,6 +522,8 @@ class DayData:
         self.seowap = ChannelData(u"seo_wap")
         self.sogouNew = ChannelData(u"新搜狗")
         self.shenma2 = ChannelData(u"神马2")
+        self.weixin = ChannelData(u"微信")
+        self.sogou2 = ChannelData(u"搜狗2")
         self.all = ChannelData(u"总计")
 
 # 渠道数据
