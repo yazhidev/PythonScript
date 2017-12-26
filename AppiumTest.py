@@ -5,6 +5,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 desired_caps = {}
 desired_caps['platformName'] = 'Android'
+# 手机系统版本号也要修改，如果版本号不对，运行的报错里会提示
 desired_caps['platformVersion'] = '6.0'
 desired_caps['deviceName'] = 'emulator-5554'
 # 想要打开的 app 的包名和启动页，包名可通过 uiautomatorviewer 获取
@@ -15,7 +16,10 @@ desired_caps['appActivity'] = '.activity.loading.LoadingActivity'
 # python 连接 appium
 driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
 
-# 网上常见这种写法：driver.find_element_by_accessibility_id("com.fudaojun.app.teacher:id/rlv_button_login").click()
+# 如果运行真机时使用 uiautomatorviewer 报错 Error while obtaining UI hierarchy XML file: com.android.ddmlib.SyncException: Remote object doesn't exist!
+# 尝试运行虚拟机时使用。安装软件到虚拟机的命令：（虚拟机开启，不连接任何真机。进入安装包所在目录后）adb install -r xxx.apk
+
+# 网上常见写法：driver.find_element_by_accessibility_id("com.fudaojun.app.teacher:id/rlv_button_login").click()
 # 但是运行会报 An element could not be located on the page using the given search parameters.
 # 字面上理解是元素未在页面中找到，但明明 id 就是正确的。所以可能导致的原因是因为代码执行到时该元素还未被加载。故要换一种
 # 写法，需要在使用元素前先等待元素加载完成
@@ -25,8 +29,5 @@ WebDriverWait(driver, 10, 0.5).until(lambda view: view.find_element_by_id("com.f
 
 # 点击登录按钮
 WebDriverWait(driver, 10, 0.5).until(lambda view: view.find_element_by_id("com.fudaojun.app.teacher:id/rlv_button_login")).click()
-
-# 如果运行真机时使用 uiautomatorviewer 报错 Error while obtaining UI hierarchy XML file: com.android.ddmlib.SyncException: Remote object doesn't exist!
-# 尝试运行虚拟机时使用。
 
 print("for my love")
