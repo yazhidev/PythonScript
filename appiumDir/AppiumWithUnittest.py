@@ -97,7 +97,7 @@ if __name__ == '__main__':
     #3. 新建文件夹HTMLTestRunner，把 HTMLTestRunner.py 文件移动到文件夹内，并新建一个__init__.py文件，此时HTMLTestRunner文件夹就被python解释器认为是可引用的模块
     #4. 将 HTMLTestRunner 文件夹拷贝到路径 .../site-packages/下即可
     #5. import HTMLTestRunner 不报错即可。
-    #6. 需要注意，在 Pycharm 里直接点运行并不会生成 html 报告。需要在命令行里执行 python AppTestDemo.py 才会生成报告
+    #6. 需要注意，在 Pycharm 里直接点运行并不会生成 html 报告。需要在命令行里执行 python AppiumWithUnittest.py 才会生成报告
 
     #网上常见的 HTMLTestRunner，会将所有class 汇总到你指定的 html 文件中，只生成一个报告
     timestr = time.strftime('%Y-%m-%d_%H-%M-%S',time.localtime(time.time()))
