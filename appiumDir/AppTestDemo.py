@@ -15,31 +15,31 @@ CONNECT = {
     "baseUrl": "http://localhost:4723/wd/hub"
 }
 
-# # 每个测试用例完成之后都会执行tearDown，然后重新setUp
-# # 会执行继承 unittest.TestCase 的每个类下的每个 test 开头的方法
-# class ResetEveryTime(unittest.TestCase):
-#
-#     def setUp(self):
-#         desired_caps = {
-#             'platformName': CONNECT['platformName'],
-#             'platformVersion': CONNECT['platformVersion'],
-#             'deviceName': CONNECT['deviceName'],
-#             'appPackage': CONNECT['appPackage'],
-#             'appActivity': CONNECT['appActivity']
-#         }
-#         self.driver = webdriver.Remote(CONNECT['baseUrl'], desired_caps)
-#
-#     def tearDown(self):
-#         self.driver.close_app()
-#         self.driver.quit()
-#
-#     # 跳过引导页
-#     def test1_skip_guide(self):
-#         WebDriverWait(self.driver, 10, 0.5).until(lambda view: view.find_element_by_id("com.fudaojun.app.teacher:id/tv_skip_guide_activity")).click()
-#
-#     # 点击登录按钮
-#     def test2_click_login(self):
-#         WebDriverWait(self.driver, 10, 0.5).until(lambda view: view.find_element_by_id("com.fudaojun.app.teacher:id/rlv_button_login")).click()
+# 每个测试用例完成之后都会执行tearDown，然后重新setUp
+# 会执行继承 unittest.TestCase 的每个类下的每个 test 开头的方法
+class ResetEveryTime(unittest.TestCase):
+
+    def setUp(self):
+        desired_caps = {
+            'platformName': CONNECT['platformName'],
+            'platformVersion': CONNECT['platformVersion'],
+            'deviceName': CONNECT['deviceName'],
+            'appPackage': CONNECT['appPackage'],
+            'appActivity': CONNECT['appActivity']
+        }
+        self.driver = webdriver.Remote(CONNECT['baseUrl'], desired_caps)
+
+    def tearDown(self):
+        self.driver.close_app()
+        self.driver.quit()
+
+    # 跳过引导页
+    def test1_skip_guide(self):
+        WebDriverWait(self.driver, 10, 0.5).until(lambda view: view.find_element_by_id("com.fudaojun.app.teacher:id/tv_skip_guide_activity")).click()
+
+    # 点击登录按钮
+    def test2_click_login(self):
+        WebDriverWait(self.driver, 10, 0.5).until(lambda view: view.find_element_by_id("com.fudaojun.app.teacher:id/rlv_button_login")).click()
 
 #只初始化一次
 class ResetOnce(unittest.TestCase):
