@@ -2,6 +2,18 @@
 
 一些简单的 Python 脚本
 
+## Appium 自动化测试系列
+
+小智哥化身~~老~~年轻司机带小娜娜入门自动化测试~
+
+### AppiumWithSelenium
+
+Appium + selenium + uiautomatorviewer 实现简单的自动化测试
+
+### AppiumWithUnittest
+
+Appium + unittest + HTMLTestRunner 实现自动化测试后生成测试报告
+
 ## CSDNCrawler
 
 爬取个人主页关注的博主的文章，并上传至 leancloud。
